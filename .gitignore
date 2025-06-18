@@ -1,0 +1,10 @@
+rag_env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+*.env
+db/
+.venv/
+.vscode/

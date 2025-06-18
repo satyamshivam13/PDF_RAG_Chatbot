@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      background-color: #f9f9f9;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    #chatbox {
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 400px;
+      overflow-y: auto;
+      background: #fff;
+      margin-bottom: 10px;
+    }
+
+    #inputContainer {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    #webToggleBtn {
+      background-color: #e0e0e0;
+      color: #333;
+    }
+
+    #webToggleBtn.active {
+      background-color: #007bff;
+      color: white;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #999;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #sendBtn {
+      background-color: #28a745;
+      color: white;
+    }
+
+    #sendBtn:hover {
+      background-color: #218838;
+    }
+
+    #clearBtn {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    #clearBtn:hover {
+      background-color: #b52a37;
+    }
+
+    .loading {
+      font-style: italic;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <h2>Chatbot</h2>
+  <div id="chatbox">🤖 Ask me something...</div>
+
+  <div id="inputContainer">
+    <button id="webToggleBtn">🌐 Web</button>
+    <input type="text" id="queryInput" placeholder="Type your question here" />
+    <button id="sendBtn">Send</button>
+    <button id="clearBtn">Clear Chat</button>
+  </div>
+
+  <script>
+    const input = document.getElementById("queryInput");
+    const chatbox = document.getElementById("chatbox");
+    const sendBtn = document.getElementById("sendBtn");
+    const webToggleBtn = document.getElementById("webToggleBtn");
+    const clearBtn = document.getElementById("clearBtn");
+
+    let webSearchEnabled = false;
+
+    webToggleBtn.addEventListener("click", () => {
+      webSearchEnabled = !webSearchEnabled;
+      webToggleBtn.classList.toggle("active");
+    });
+
+    clearBtn.addEventListener("click", () => {
+      chatbox.innerHTML = "🤖 Ask me something...";
+      input.value = "";
+      input.focus();
+    });
+
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+
+    sendBtn.addEventListener("click", async () => {
+      const question = input.value.trim();
+      if (!question) return;
+
+      appendMessage(`\n\n🧑‍💼 You: ${question}`);
+      input.value = "";
+      scrollToBottom();
+
+      if (webSearchEnabled) {
+        appendMessage(`\n🌐 Web Search enabled. Searching...`);
+        scrollToBottom();
+        await performWebSearch(question);
+      } else {
+        appendMessage(`\n🤖 Bot: `);
+        const responseEl = document.createElement("span");
+        responseEl.classList.add("loading");
+        responseEl.textContent = "⏳ Thinking...";
+        chatbox.appendChild(responseEl);
+        scrollToBottom();
+        await askLLM(question, responseEl);
+      }
+    });
+
+    function appendMessage(text) {
+      chatbox.innerHTML += text;
+    }
+
+    async function askLLM(question, responseEl) {
+      try {
+        const start = Date.now();
+        const res = await fetch("http://localhost:8000/ask-stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+
+        if (!res.ok) {
+          responseEl.textContent = "⚠️ Server Error.";
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let fullText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          fullText += chunk;
+          responseEl.textContent = fullText.trim();
+          scrollToBottom();
+        }
+
+        const end = ((Date.now() - start) / 1000).toFixed(2);
+        appendMessage(`\n⏱️ Response time: ${end} sec`);
+      } catch (err) {
+        responseEl.textContent = "⚠️ Failed to connect to backend.";
+      }
+    }
+
+    async function performWebSearch(query) {
+      try {
+        const res = await fetch("http://localhost:8000/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+        });
+
+        const data = await res.json();
+        if (data.results && data.results.length) {
+          const links = data.results
+            .map((r) => `\n${r.body}\n${r.href}`)
+            .join("\n\n");
+          appendMessage(`\n\n🌐 Web Results:\n${links}`);
+        } else {
+          appendMessage("\n❌ No results found.");
+        }
+      } catch (err) {
+        appendMessage("\n⚠️ Web search error.");
+      }
+
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+  </script>
+</body>
+</html>

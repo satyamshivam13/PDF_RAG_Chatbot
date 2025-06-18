@@ -1,0 +1,32 @@
+Welcome to SmartSync – your intelligent file backup and sync solution!
+
+SmartSync helps users automatically back up important files across devices in real-time. It supports Windows, macOS, and Linux platforms.
+
+Key Features:
+- Real-time sync across devices
+- Encrypted cloud backups
+- Version history and file recovery
+- Integration with Google Drive, Dropbox, and OneDrive
+- Bandwidth throttling and scheduling options
+
+Frequently Asked Questions:
+
+Q: How do I install SmartSync?
+A: Visit our website at www.smartsync.io and download the installer for your operating system. Follow the setup wizard to complete the installation.
+
+Q: How do I restore a deleted file?
+A: Go to the SmartSync dashboard, navigate to the folder, click “Version History,” and select the file you want to restore.
+
+Q: Is my data encrypted?
+A: Yes, SmartSync uses end-to-end AES-256 encryption to ensure your files are safe and private.
+
+Q: What happens if I lose internet connection?
+A: SmartSync will queue your changes locally and sync them automatically once you're back online.
+
+Support:
+For troubleshooting, visit our help center or contact support at support@smartsync.io.
+
+Pro Tip:
+You can exclude temporary or large files by adding them to your SmartSync Ignore List in the app settings.
+
+Last updated: June 2025
