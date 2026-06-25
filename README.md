@@ -158,6 +158,9 @@ no local GPU, and no model download** required.
 | `GROQ_API_KEY` | ✅ Yes | — | Groq API key from [console.groq.com/keys](https://console.groq.com/keys) |
 | `LLM_MODEL` | No | `llama-3.1-8b-instant` | Override the Groq chat model |
 | `LLM_BASE_URL` | No | Groq default | Point at any OpenAI-compatible endpoint |
+| `CHUNK_SIZE` | No | `1000` | Characters per embedded chunk |
+| `CHUNK_OVERLAP` | No | `150` | Character overlap between chunks |
+| `TOP_K` | No | `4` | Number of chunks retrieved per question |
 
 **Windows (PowerShell):**
 ```powershell
@@ -203,8 +206,8 @@ deploy `streamlit_app.py` → paste `GROQ_API_KEY` into **Secrets** (see
   Streamlit Cloud restarts; uploads live for the container's lifetime.
 - **Free-tier sleep & token caps** — the Cloud app sleeps when idle (cold start on
   wake), and Groq's free tier has a daily token cap.
-- **Small chunking** (200/50) — tuned for short demo docs; large PDFs benefit from
-  bigger chunks and higher `k`.
+- **Chunking is a trade-off** — defaults are 1000/150 with `TOP_K=4`; very large PDFs
+  may want bigger chunks or higher `k` (all tunable via env vars).
 - **API chat memory is process-global** — fine for a single-user demo, not multi-tenant.
 - **Streamlit UI vs. API** — only the Streamlit app is deployed by the Cloud flow; the
   FastAPI backend and `index.html` are for local/self-hosted use.

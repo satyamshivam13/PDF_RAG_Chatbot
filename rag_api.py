@@ -25,6 +25,7 @@ from config import (
     CHUNK_OVERLAP,
     EMBEDDING_MODEL,
     LLM_MODEL,
+    TOP_K,
 )
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -54,7 +55,7 @@ def search_duckduckgo(query, max_results=10):
 # Initialize components (none of these require GROQ_API_KEY, so import never crashes)
 embedding = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 vectorstore = Chroma(persist_directory=PERSIST_DIR, embedding_function=embedding)
-retriever = vectorstore.as_retriever(search_kwargs={"k": 2})
+retriever = vectorstore.as_retriever(search_kwargs={"k": TOP_K})
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
 # Lazily-created Groq client (built on first use so a missing key never crashes import)
@@ -98,15 +99,12 @@ def ask_question_stream(query: Query):
             yield str(e)
             return
 
-        # Retrieve document chunks using correct method
+        # Retrieve the top-k document chunks for grounding context
         retrieved_docs = retriever.get_relevant_documents(query.question)
-        context = "\n\n".join(doc.page_content for doc in retrieved_docs[:2])
-        
-        # If no documents are retrieved, provide a default message
         if not retrieved_docs:
             context = "[We are still learning. No relevant information found in our database.]"
         else:
-            context = "\n\n".join(doc.page_content for doc in retrieved_docs[:2])
+            context = "\n\n".join(doc.page_content for doc in retrieved_docs)
 
         # Retrieve previous chat
         chat_history = memory.load_memory_variables({}).get("chat_history", "")

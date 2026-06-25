@@ -24,8 +24,11 @@ LLM_BASE_URL = os.getenv("LLM_BASE_URL")  # optional OpenAI-compatible endpoint
 # ── Retrieval / embeddings ─────────────────────────────────────────────
 PERSIST_DIR = os.getenv("PERSIST_DIR", "db")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "200"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "50"))
+# Larger chunks + higher top-k give the LLM more grounding context than the original
+# 200/50/k=2 defaults, which were too small for real PDFs. All are env-tunable.
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "150"))
+TOP_K = int(os.getenv("TOP_K", "4"))
 
 # User-facing message reused by both the API and the UI.
 MISSING_KEY_MESSAGE = (
@@ -53,6 +56,8 @@ def config_status() -> dict:
         "llm_model": os.getenv("LLM_MODEL", LLM_MODEL),
         "llm_base_url": os.getenv("LLM_BASE_URL") or "(groq default)",
         "embedding_model": EMBEDDING_MODEL,
+        "chunk_size": CHUNK_SIZE,
+        "top_k": TOP_K,
     }
 
 

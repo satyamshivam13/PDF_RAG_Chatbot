@@ -21,7 +21,7 @@ except Exception:
     pass  # no secrets.toml locally is fine; env vars / .env still work
 
 import config
-from config import CHUNK_SIZE, CHUNK_OVERLAP, PERSIST_DIR, EMBEDDING_MODEL, LLM_MODEL
+from config import CHUNK_SIZE, CHUNK_OVERLAP, PERSIST_DIR, EMBEDDING_MODEL, LLM_MODEL, TOP_K
 
 # Session state for modal
 if "show_modal" not in st.session_state:
@@ -39,7 +39,7 @@ def load_vectorstore():
     return Chroma(persist_directory=PERSIST_DIR, embedding_function=embedding)
 
 vectorstore = load_vectorstore()
-retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+retriever = vectorstore.as_retriever(search_kwargs={"k": TOP_K})
 sys.modules["torch.classes"] = None
 
 # Validate configuration with a friendly UI warning instead of a crash/traceback.
