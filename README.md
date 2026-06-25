@@ -1,37 +1,93 @@
-# RAG-based AI Assistant
+# PDF RAG Chatbot
 
-This project is a **Retrieval-Augmented Generation (RAG)** based chatbot assistant, offering users real-time document querying, web-enhanced search, and file-based AI Q&A.
+### Upload a document, ask questions, get streamed and source-grounded answers.
 
-Built with:
-- FastAPI for backend API
-- Streamlit for the web UI
-- LangChain for chaining LLMs with vector stores
-- HuggingFace Embeddings + ChromaDB for document retrieval
-- Groq Cloud API for fast LLM inference (no local GPU required)
+A polished, **user-facing** Retrieval-Augmented Generation (RAG) application that
+demonstrates the complete end-user experience of RAG: drop in a `.pdf`, `.txt`, or
+`.json` file, ask questions in natural language, and watch grounded answers stream
+back token-by-token — with a web-search fallback and conversational memory.
+
+This repo is the **product layer**. Its sibling, [RAG_Pipeline](https://github.com/satyamshivam13/RAG_Pipeline),
+is the **engineering/backend platform** (FAISS, guardrails, RAGAS evaluation,
+OpenTelemetry, Docker). Together they show both halves of a real RAG system —
+*how the engine is built* and *what the product feels like*. See the
+[comparison](#how-this-complements-rag_pipeline).
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-059669?logo=fastapi&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq-LLM%20API-F55036?logo=groq&logoColor=white)
+![ChromaDB](https://img.shields.io/badge/ChromaDB-vectors-2563EB)
+![LangChain](https://img.shields.io/badge/LangChain-RAG-1C3C3C)
+![License](https://img.shields.io/badge/License-MIT-16A34A)
+
+<!-- LIVE DEMO BADGE — add only AFTER a verified Streamlit Cloud deployment (see DEPLOYMENT.md):
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit)](https://<app>.streamlit.app)
+-->
+> **Live demo:** one-click deployable to Streamlit Community Cloud — see [DEPLOYMENT.md](DEPLOYMENT.md).
+> (Badge will be added here once the deployment is verified.)
 
 ---
 
 ## Features
 
--  Upload `.txt`, `.pdf`, or `.json` files for Q&A
--  Ask questions and get answers powered by documents
--  Optional DuckDuckGo web search integration
--  Chat memory with conversational context
--  Real-time LLM streaming (FastAPI/Streamlit)
--  Persistent vector store with duplicate file hashing
+- **Document Q&A** — upload `.pdf`, `.txt`, or `.json` and ask questions grounded in the content
+- **Streaming answers** — responses render token-by-token in both the Streamlit UI and the API
+- **Conversational memory** — the FastAPI backend keeps chat context across turns
+- **Web-search fallback** — optional DuckDuckGo search when documents don't cover the question
+- **Persistent vectors** — ChromaDB store with MD5 hashing to skip re-embedding duplicate files
+- **Cloud-native LLM** — Groq Cloud API; **no Ollama, no local GPU, no model downloads**
+- **Graceful configuration** — missing `GROQ_API_KEY` shows a friendly message, never a stack trace
 
 ---
 
-## Project Structure
+## How this complements RAG_Pipeline
 
+|  | **PDF_RAG_Chatbot** (this repo) | **[RAG_Pipeline](https://github.com/satyamshivam13/RAG_Pipeline)** |
+|---|---|---|
+| **Purpose** | End-user product — "what RAG feels like" | Production engine — "how RAG is built & measured" |
+| **Audience** | Recruiters, PMs, end users | Backend / ML engineers |
+| **Interface** | Streamlit UI + FastAPI + chat HTML | API + Python SDK (no UI) |
+| **Architecture** | Upload → Chroma → Groq → stream | Chunk → FAISS+MMR → guardrail → generate → RAGAS eval |
+| **Strengths** | Interactive UX, file upload, streaming, web fallback | Quality gates, observability, Docker, measured metrics |
+| **Deployment** | Streamlit Community Cloud (1-click) | Docker / docker-compose |
+
+The two repos share **no code** and use different vector stores; the overlap is
+thematic, not functional. This one shows the **experience**, the other shows the
+**engineering rigor**.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    U[User] -->|upload .pdf/.txt/.json| P[PyMuPDF parse + chunk]
+    P --> E[HuggingFace embeddings<br/>all-MiniLM-L6-v2]
+    E --> C[(ChromaDB<br/>persistent store)]
+    U -->|question| R[Retriever k-NN]
+    C --> R
+    R -->|context| G[Groq LLM<br/>llama-3.1-8b-instant]
+    G -->|streamed tokens| U
+    U -.->|optional| W[DuckDuckGo fallback]
 ```
-├── rag_api.py          # FastAPI backend for streaming and upload
-├── streamlit_app.py    # Streamlit-based UI interface
-├── index.html          # Optional web UI (vanilla JS-based)
-├── vectorstore.py      # CLI tool to pre-process and store documents
-├── db/                 # ChromaDB persistent storage
-├── demo.txt            # (Optional) Sample document
+
+```text
+[Upload] -> [Parse+Chunk] -> [Embed] -> [ChromaDB]
+[Question] -> [Retrieve top-k] -> [Groq LLM + context] -> [Stream answer]
+                                          \-> [DuckDuckGo fallback]
 ```
+
+| Layer | Technology |
+|---|---|
+| UI | Streamlit |
+| API | FastAPI + Uvicorn (streaming, upload, `/health`, web search) |
+| LLM | Groq Cloud — `llama-3.1-8b-instant` (OpenAI-compatible) |
+| Embeddings | sentence-transformers `all-MiniLM-L6-v2` (local CPU) |
+| Vector store | ChromaDB (persistent, MD5 de-duplication) |
+| Orchestration | LangChain (0.1.x) |
+| Doc parsing | PyMuPDF (`fitz`) |
+| Web fallback | DuckDuckGo Search |
 
 ---
 
@@ -60,9 +116,9 @@ pip install -r requirements.txt
 
 ### 4. Configure your Groq API key
 
-This app calls the **Groq Cloud API** for LLM inference, so you need a free API key
-from [console.groq.com/keys](https://console.groq.com/keys). Set it as an environment
-variable before running (see the [LLM Provider](#llm-provider) section for per-OS steps).
+Get a free key at [console.groq.com/keys](https://console.groq.com/keys), then set it
+(see [LLM Provider](#llm-provider) for per-OS details). A missing key won't crash the
+app — you'll get a clear message telling you what to set.
 
 ### 5. (Optional) Pre-load the sample document
 
@@ -70,40 +126,38 @@ variable before running (see the [LLM Provider](#llm-provider) section for per-O
 python vectorstore.py
 ```
 
-### 6. Run the FastAPI backend
-
-```bash
-uvicorn rag_api:app --reload --port 8000
-```
-
-### 7. Run the Streamlit UI
+### 6. Run the Streamlit UI (primary)
 
 ```bash
 streamlit run streamlit_app.py
+```
+
+### 7. (Optional) Run the FastAPI backend + HTML chat
+
+```bash
+uvicorn rag_api:app --reload --port 8000   # then open index.html
 ```
 
 ---
 
 ## LLM Provider
 
-This project uses the **Groq Cloud API** for LLM inference — there is **no Ollama, no local
-GPU, and no model download** required.
+This project uses the **Groq Cloud API** for LLM inference — there is **no Ollama,
+no local GPU, and no model download** required.
 
 - **Provider:** Groq Cloud (OpenAI-compatible chat completions)
 - **Default model:** `llama-3.1-8b-instant`
-- **Embeddings:** run locally via `sentence-transformers/all-MiniLM-L6-v2` (CPU, ~90 MB)
-- **Why Groq:** very low latency (ideal for token streaming) and a generous free tier, so the
-  app stays fully cloud-deployable without any local model hosting.
+- **Embeddings:** local CPU via `sentence-transformers/all-MiniLM-L6-v2` (~90 MB)
+- **Why Groq:** very low latency (great for streaming) and a generous free tier, so the
+  app stays fully cloud-deployable with no local model hosting.
 
-### Required environment variable
+### Environment variables
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `GROQ_API_KEY` | ✅ Yes | — | Your Groq API key from [console.groq.com/keys](https://console.groq.com/keys) |
+| `GROQ_API_KEY` | ✅ Yes | — | Groq API key from [console.groq.com/keys](https://console.groq.com/keys) |
 | `LLM_MODEL` | No | `llama-3.1-8b-instant` | Override the Groq chat model |
 | `LLM_BASE_URL` | No | Groq default | Point at any OpenAI-compatible endpoint |
-
-### Setting `GROQ_API_KEY`
 
 **Windows (PowerShell):**
 ```powershell
@@ -115,26 +169,62 @@ $env:GROQ_API_KEY = "your_api_key_here"
 export GROQ_API_KEY="your_api_key_here"
 ```
 
-Or create a `.env` file in the project root (it is git-ignored):
+Or create a git-ignored `.env` file in the project root:
 ```env
 GROQ_API_KEY=your_api_key_here
 ```
 
 ---
 
-## File Upload & Search
+## Deployment (Streamlit Community Cloud)
 
-- Upload documents via Streamlit UI or API (`/upload`)
-- Ask questions via Streamlit or `index.html` chat UI
-- Enable web search for fallback answers via DuckDuckGo
+This app is built to deploy with no local model hosting. Full instructions and a
+post-deploy validation checklist are in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
+Quick version: push to GitHub → [share.streamlit.io](https://share.streamlit.io) →
+deploy `streamlit_app.py` → paste `GROQ_API_KEY` into **Secrets** (see
+[`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example)).
+
+---
+
+## Screenshots
+
+<!-- TODO: add a real screenshot after deployment -->
+![Demo screenshot placeholder](docs/screenshot.png)
+
+> Tip: a 15–30s GIF of upload → question → streamed answer is the single most
+> effective recruiter asset for this repo.
+
+---
+
+## Known Limitations
+
+- **Ephemeral storage on Cloud** — the ChromaDB `db/` store doesn't persist across
+  Streamlit Cloud restarts; uploads live for the container's lifetime.
+- **Free-tier sleep & token caps** — the Cloud app sleeps when idle (cold start on
+  wake), and Groq's free tier has a daily token cap.
+- **Small chunking** (200/50) — tuned for short demo docs; large PDFs benefit from
+  bigger chunks and higher `k`.
+- **API chat memory is process-global** — fine for a single-user demo, not multi-tenant.
+- **Streamlit UI vs. API** — only the Streamlit app is deployed by the Cloud flow; the
+  FastAPI backend and `index.html` are for local/self-hosted use.
+
+---
+
+## Future Roadmap
+
+- [ ] Verified live Streamlit Cloud deployment + live-demo badge
+- [ ] Inline source/citation display under each answer
+- [ ] Per-session memory and a visible "New conversation" control in the UI
+- [ ] Configurable chunk size / top-k from the UI
+- [ ] Smoke tests + CI (see Phase 8) → broader integration tests
+- [ ] Optional swap to a larger Groq model via `LLM_MODEL`
 
 ---
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](./LICENSE) for details.
-
----
+MIT — see [LICENSE](./LICENSE).
 
 ## Acknowledgments
 
