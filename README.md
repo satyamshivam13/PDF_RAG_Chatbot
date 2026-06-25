@@ -21,11 +21,13 @@ OpenTelemetry, Docker). Together they show both halves of a real RAG system —
 ![LangChain](https://img.shields.io/badge/LangChain-RAG-1C3C3C)
 ![License](https://img.shields.io/badge/License-MIT-16A34A)
 
-<!-- LIVE DEMO BADGE — add only AFTER a verified Streamlit Cloud deployment (see DEPLOYMENT.md):
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit)](https://<app>.streamlit.app)
+<!-- LIVE DEMO BADGE (staged): after a verified Streamlit Cloud deploy, replace
+     <app> below with your app's subdomain, uncomment this line, and delete the
+     "Live demo" note underneath. See DEPLOYMENT.md.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20App-FF4B4B?logo=streamlit&logoColor=white)](https://<app>.streamlit.app)
 -->
-> **Live demo:** one-click deployable to Streamlit Community Cloud — see [DEPLOYMENT.md](DEPLOYMENT.md).
-> (Badge will be added here once the deployment is verified.)
+> 🚀 **Live demo:** one-click deployable to Streamlit Community Cloud — see [DEPLOYMENT.md](DEPLOYMENT.md).
+> The badge above is staged and ready; it goes live once the deployment is verified.
 
 ---
 
@@ -192,8 +194,13 @@ deploy `streamlit_app.py` → paste `GROQ_API_KEY` into **Secrets** (see
 
 ## Screenshots
 
-<!-- TODO: add a real screenshot after deployment -->
-![Demo screenshot placeholder](docs/screenshot.png)
+_No screenshots yet._ Drop `screenshot.png` and/or `demo.gif` into [`docs/`](docs/)
+(see [docs/README.md](docs/README.md) for guidance), then uncomment the lines below:
+
+<!-- After adding the files, uncomment:
+![App screenshot](docs/screenshot.png)
+![Demo walkthrough](docs/demo.gif)
+-->
 
 > Tip: a 15–30s GIF of upload → question → streamed answer is the single most
 > effective recruiter asset for this repo.
