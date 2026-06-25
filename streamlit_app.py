@@ -11,6 +11,15 @@ import hashlib
 import time
 import sys
 
+# Bridge Streamlit Cloud secrets -> environment so the env-based config sees them.
+# (Streamlit exposes secrets via st.secrets, not reliably via os.environ.)
+try:
+    for _k in ("GROQ_API_KEY", "LLM_MODEL", "LLM_BASE_URL"):
+        if _k in st.secrets and not os.environ.get(_k):
+            os.environ[_k] = str(st.secrets[_k])
+except Exception:
+    pass  # no secrets.toml locally is fine; env vars / .env still work
+
 import config
 from config import CHUNK_SIZE, CHUNK_OVERLAP, PERSIST_DIR, EMBEDDING_MODEL, LLM_MODEL
 

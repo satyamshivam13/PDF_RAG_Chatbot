@@ -35,17 +35,23 @@ MISSING_KEY_MESSAGE = (
 )
 
 
+def _groq_key() -> str | None:
+    """Read the key live so a secrets->env bridge (e.g. Streamlit Cloud) set after
+    import is still respected."""
+    return os.getenv("GROQ_API_KEY")
+
+
 def is_configured() -> bool:
     """True if the minimum required configuration (the Groq key) is present."""
-    return bool(GROQ_API_KEY)
+    return bool(_groq_key())
 
 
 def config_status() -> dict:
     """Non-secret config snapshot for /health and debugging."""
     return {
-        "groq_api_key_set": bool(GROQ_API_KEY),
-        "llm_model": LLM_MODEL,
-        "llm_base_url": LLM_BASE_URL or "(groq default)",
+        "groq_api_key_set": bool(_groq_key()),
+        "llm_model": os.getenv("LLM_MODEL", LLM_MODEL),
+        "llm_base_url": os.getenv("LLM_BASE_URL") or "(groq default)",
         "embedding_model": EMBEDDING_MODEL,
     }
 
@@ -53,11 +59,13 @@ def config_status() -> dict:
 def get_groq_client():
     """Return a configured Groq client, or raise RuntimeError with a clear,
     message-only error (no secret, no stack-trace-worthy internals)."""
-    if not GROQ_API_KEY:
+    key = _groq_key()
+    if not key:
         raise RuntimeError(MISSING_KEY_MESSAGE)
     from groq import Groq
 
-    kwargs = {"api_key": GROQ_API_KEY}
-    if LLM_BASE_URL:
-        kwargs["base_url"] = LLM_BASE_URL
+    kwargs = {"api_key": key}
+    base_url = os.getenv("LLM_BASE_URL")
+    if base_url:
+        kwargs["base_url"] = base_url
     return Groq(**kwargs)

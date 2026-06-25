@@ -1,0 +1,14 @@
+# Streamlit configuration (safe to commit — contains no secrets).
+# Docs: https://docs.streamlit.io/develop/api-reference/configuration/config.toml
+
+[server]
+headless = true            # required for Streamlit Community Cloud
+enableXsrfProtection = true
+maxUploadSize = 10         # MB cap for PDF/TXT/JSON uploads
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#2563EB"
