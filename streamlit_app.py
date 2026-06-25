@@ -1,24 +1,18 @@
+import os
 import streamlit as st
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_ollama import OllamaLLM
 from langchain_core.documents import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 import json
 import fitz  # PyMuPDF
 import hashlib
-import os
 import time
 import sys
 
-# Constants
-CHUNK_SIZE = 200
-CHUNK_OVERLAP = 50
-PERSIST_DIR = "db"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-#EMBEDDING_MODEL = "sentence-transformers/paraphrase-MiniLM-L3-v2"
-LLM_MODEL = "mistral"
+import config
+from config import CHUNK_SIZE, CHUNK_OVERLAP, PERSIST_DIR, EMBEDDING_MODEL, LLM_MODEL
 
 # Session state for modal
 if "show_modal" not in st.session_state:
@@ -37,8 +31,14 @@ def load_vectorstore():
 
 vectorstore = load_vectorstore()
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-llm = OllamaLLM(model=LLM_MODEL)
 sys.modules["torch.classes"] = None
+
+# Validate configuration with a friendly UI warning instead of a crash/traceback.
+try:
+    client = config.get_groq_client()
+except RuntimeError as e:
+    st.error(str(e))
+    st.stop()
 
 
 # UI Layout
@@ -98,9 +98,16 @@ Answer:"""
         placeholder = st.empty()
         partial_response = ""
 
-        for chunk in llm.stream(prompt):
-            partial_response += chunk
-            placeholder.markdown(partial_response + "▌")
+        stream = client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            stream=True
+        )
+        for chunk in stream:
+            content = chunk.choices[0].delta.content or ""
+            if content:
+                partial_response += content
+                placeholder.markdown(partial_response + "▌")
 
         placeholder.markdown(partial_response)  # Finalize the response
 

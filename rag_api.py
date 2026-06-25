@@ -8,9 +8,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_ollama import OllamaLLM
 from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
 from duckduckgo_search import DDGS
 
 import hashlib
@@ -20,16 +18,18 @@ import os
 import time
 import warnings
 
+import config
+from config import (
+    PERSIST_DIR,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
+    EMBEDDING_MODEL,
+    LLM_MODEL,
+)
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 app = FastAPI()
-
-# Constants
-PERSIST_DIR = "db"
-CHUNK_SIZE = 200
-CHUNK_OVERLAP = 50
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-LLM_MODEL = "mistral"
 
 # CORS configuration
 app.add_middleware(
@@ -51,19 +51,31 @@ def search_duckduckgo(query, max_results=10):
         return list(results)
 
 
-# Initialize components
+# Initialize components (none of these require GROQ_API_KEY, so import never crashes)
 embedding = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 vectorstore = Chroma(persist_directory=PERSIST_DIR, embedding_function=embedding)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 2})
-llm = OllamaLLM(model=LLM_MODEL)
-memory_llm = OllamaLLM(model="phi")
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-qa_chain = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    retriever=retriever,
-    memory=memory
-)
+# Lazily-created Groq client (built on first use so a missing key never crashes import)
+_client = None
+
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = config.get_groq_client()  # raises RuntimeError with a clear message
+    return _client
+
+
+@app.on_event("startup")
+def validate_configuration():
+    """Log a clear, non-fatal warning if the app starts without a Groq key."""
+    if not config.is_configured():
+        print(f"[startup] WARNING: {config.MISSING_KEY_MESSAGE}")
+    else:
+        print(f"[startup] Groq configured — model={LLM_MODEL}")
+
 
 class Query(BaseModel):
     question: str
@@ -72,9 +84,20 @@ class Query(BaseModel):
 def root():
     return {"message": "API is running"}
 
+@app.get("/health")
+def health():
+    return {"status": "ok", "configured": config.is_configured(), **config.config_status()}
+
 @app.post("/ask-stream")
 def ask_question_stream(query: Query):
     def generate():
+        # Validate configuration before doing any work; stream a clear message if unset.
+        try:
+            client = get_client()
+        except RuntimeError as e:
+            yield str(e)
+            return
+
         # Retrieve document chunks using correct method
         retrieved_docs = retriever.get_relevant_documents(query.question)
         context = "\n\n".join(doc.page_content for doc in retrieved_docs[:2])
@@ -104,9 +127,16 @@ Assistant:"""
 
         # Stream the response from the LLM
         response = ""
-        for chunk in llm.stream(prompt):
-            response += chunk
-            yield chunk
+        stream = client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            stream=True
+        )
+        for chunk in stream:
+            content = chunk.choices[0].delta.content or ""
+            if content:
+                response += content
+                yield content
 
         # Save context to memory
         memory.save_context({"input": query.question}, {"output": response})

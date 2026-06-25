@@ -1,19 +1,21 @@
+import sys
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.llms import Ollama
 
-# Constants
-PERSIST_DIR = "db"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-LLM_MODEL = "mistral"
+import config
+from config import PERSIST_DIR, EMBEDDING_MODEL, LLM_MODEL
 
 # Load vectorstore and retriever
 embedding = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 vectorstore = Chroma(persist_directory=PERSIST_DIR, embedding_function=embedding)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-# Load local LLM
-llm = Ollama(model=LLM_MODEL)
+# Groq client (friendly exit instead of a traceback if the key is missing)
+try:
+    client = config.get_groq_client()
+except RuntimeError as e:
+    print(f"\n[config] {e}")
+    sys.exit(1)
 
 # Ask a question
 query = "Who is finaceindia?"
@@ -28,7 +30,10 @@ Question: {query}
 Answer:"""
 
 # Call the model
-response = llm.invoke(prompt)
+response = client.chat.completions.create(
+    model=LLM_MODEL,
+    messages=[{"role": "user", "content": prompt}]
+).choices[0].message.content
 
 # Display result
 print("\n Answer:\n", response)
