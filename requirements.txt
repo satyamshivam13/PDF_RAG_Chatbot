@@ -1,14 +1,34 @@
+# ── Web framework / API ────────────────────────────────────────────────
+fastapi==0.110.0            # REST backend (rag_api.py)
+uvicorn==0.27.1             # ASGI server to run the FastAPI app
+python-multipart==0.0.9     # required by FastAPI for multipart file uploads (/upload)
+
+# ── UI ─────────────────────────────────────────────────────────────────
+streamlit==1.33.0           # web UI (streamlit_app.py)
+
+# ── LLM provider ───────────────────────────────────────────────────────
+groq>=0.4.0                 # Groq Cloud chat-completions client (streaming)
+
+# ── RAG orchestration ──────────────────────────────────────────────────
+# Pinned to the 0.1.x line on purpose: newer LangChain relocates
+# HuggingFaceEmbeddings / Chroma imports and would break this code.
 langchain==0.1.13
 langchain-community==0.0.29
 langchain-core==0.1.34
-chromadb==0.4.24
-transformers==4.38.2
-torch==2.2.0
-tqdm==4.66.2
-sentence-transformers==2.2.2
-unstructured==0.12.5
-uvicorn==0.27.1
-fastapi==0.110.0
-python-dotenv==1.0.1
-ollama==0.1.8
-duckduckgo-search>=0.10.0
+
+# ── Vector store + embeddings ──────────────────────────────────────────
+chromadb==0.4.24            # persistent vector database
+sentence-transformers==2.2.2  # local embeddings (all-MiniLM-L6-v2)
+huggingface_hub==0.20.3     # PIN: sentence-transformers 2.2.2 imports cached_download,
+                            # which was removed in huggingface_hub >= 0.26 (fresh-install break)
+transformers==4.38.2        # transitive of sentence-transformers; pinned for reproducibility
+torch==2.2.0                # transitive of sentence-transformers; pinned for reproducibility
+
+# ── Document parsing ───────────────────────────────────────────────────
+pymupdf==1.24.1             # provides `fitz` for PDF text extraction
+
+# ── Web search fallback ────────────────────────────────────────────────
+duckduckgo-search>=0.10.0   # DuckDuckGo fallback (/search)
+
+# ── Configuration ──────────────────────────────────────────────────────
+python-dotenv==1.0.1        # load GROQ_API_KEY / LLM_* from a .env file
