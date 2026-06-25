@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    name: Smoke tests (install + validate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        # Doubles as a clean-room validation that requirements.txt installs.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Byte-compile all modules
+        run: python -m py_compile config.py rag_api.py streamlit_app.py qa_rag.py vectorstore.py
+
+      - name: Run smoke tests
+        # No GROQ_API_KEY is set on purpose: the app must start and validate gracefully.
+        run: pytest tests/ -v

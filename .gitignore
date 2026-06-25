@@ -9,6 +9,7 @@ db/
 .venv/
 venv/
 .vscode/
+.pytest_cache/
 
 # Streamlit secrets — never commit real secrets (the .example is tracked)
 .streamlit/secrets.toml
