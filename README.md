@@ -13,6 +13,8 @@ OpenTelemetry, Docker). Together they show both halves of a real RAG system —
 *how the engine is built* and *what the product feels like*. See the
 [comparison](#how-this-complements-rag_pipeline).
 
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-PDF_RAG_Chatbot-brightgreen)](https://pdfragchatbot-01.streamlit.app/)
+
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-backend-059669?logo=fastapi&logoColor=white)
@@ -21,13 +23,7 @@ OpenTelemetry, Docker). Together they show both halves of a real RAG system —
 ![LangChain](https://img.shields.io/badge/LangChain-RAG-1C3C3C)
 ![License](https://img.shields.io/badge/License-MIT-16A34A)
 
-<!-- LIVE DEMO BADGE (staged): after a verified Streamlit Cloud deploy, replace
-     <app> below with your app's subdomain, uncomment this line, and delete the
-     "Live demo" note underneath. See DEPLOYMENT.md.
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20App-FF4B4B?logo=streamlit&logoColor=white)](https://<app>.streamlit.app)
--->
-> 🚀 **Live demo:** one-click deployable to Streamlit Community Cloud — see [DEPLOYMENT.md](DEPLOYMENT.md).
-> The badge above is staged and ready; it goes live once the deployment is verified.
+> 🚀 **[Live demo](https://pdfragchatbot-01.streamlit.app/)** — running on Streamlit Community Cloud. See [DEPLOYMENT.md](DEPLOYMENT.md) for how it's deployed.
 
 ---
 
